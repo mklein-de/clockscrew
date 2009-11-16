@@ -1,10 +1,12 @@
+#include "config.h"
+
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
 
-#define LIBFAKETIME "libfaketime." SO_EXT ": "
+#define LIBFAKETIME "libfaketime" LT_MODULE_EXT ": "
 
 static int(*real_gettimeofday)(struct timeval *, void*);
 static long faketime_diff;
