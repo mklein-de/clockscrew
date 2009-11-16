@@ -9,13 +9,14 @@ else
 endif
 
 CFLAGS:=-fpic
+CPPFLAGS:=-DSO_EXT="\"$(SO_EXT)\""
 LDFLAGS+=-init _libfaketime_init
 
-.PHONY: all clean
+.PHONY: all clean install
 all: libfaketime.$(SO_EXT)
 
 libfaketime.$(SO_EXT): faketime.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ faketime.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ faketime.c
 
 clean:
 	rm -f libfaketime.$(SO_EXT) core *~

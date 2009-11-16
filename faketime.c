@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <time.h>
+
+#define LIBFAKETIME "libfaketime." SO_EXT ": "
 
 static int(*real_gettimeofday)(struct timeval *, void*);
 static long faketime_diff;
@@ -24,12 +27,35 @@ void libfaketime_init()
     real_gettimeofday = dlsym(RTLD_NEXT, "gettimeofday");
 
     faketime_str = getenv("FAKETIME");
-    fprintf(stderr, "faketime_str=%s\n", faketime_str);
     if (faketime_str && *faketime_str)
     {
-        if (strptime(faketime_str, "@%F %T", &abstime))
+        if (*faketime_str == '@')
         {
-            faketime_diff = mktime(&abstime) - time(NULL);
+            now = time(NULL);
+            localtime_r(&now, &abstime);
+            static const char *date_fmts[] =
+            {
+                "@%Y-%m-%d %H:%M:%S",
+                "@%Y-%m-%d %H:%M",
+                "@%Y-%m-%d",
+                "@%Y",
+                0
+            }, **fmt;
+
+            for (fmt = date_fmts; *fmt; fmt++)
+            {
+                const char * p;
+                if ((p = strptime(faketime_str, *fmt, &abstime)) && !*p)
+                {
+                    faketime_diff = mktime(&abstime) - now;
+                    break;
+                }
+            }
+
+            if (!*fmt)
+            {
+                fprintf(stderr, LIBFAKETIME "FAKETIME doesn't contain a valid date string: \"%s\"\n", faketime_str);
+            }
         }
         else
         {
@@ -43,6 +69,15 @@ void libfaketime_init()
                 case 's':
                 case 0:
                           break;
+
+                default:
+                          fprintf(stderr, LIBFAKETIME "invalid offset unit: \"%c\"\n", *unit);
+                          break;
+            }
+
+            if (*unit && *(unit+1))
+            {
+                fprintf(stderr, LIBFAKETIME "ignoring trailing chars: \"%s\"\n", unit+1);
             }
         }
     }
