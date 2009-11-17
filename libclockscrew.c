@@ -6,32 +6,32 @@
 #include <sys/time.h>
 #include <time.h>
 
-#define LIBFAKETIME "libfaketime" LT_MODULE_EXT ": "
+#define LOGNAME "lib" PACKAGE LT_MODULE_EXT ": "
 
 static int(*real_gettimeofday)(struct timeval *, void*);
-static long faketime_diff;
+static long diff_secs;
 
 int gettimeofday(struct timeval * tp, void * tzp)
 {
     int ret;
     ret = real_gettimeofday(tp, tzp);
-    tp->tv_sec += faketime_diff;
+    tp->tv_sec += diff_secs;
     return ret;
 }
 
-void __attribute__ ((constructor)) libfaketime_init()
+static void __attribute__ ((constructor)) init_func()
 {
-    const char *faketime_str;
+    const char *env_str;
     char *unit;
     struct tm abstime;
     time_t now;
 
     real_gettimeofday = dlsym(RTLD_NEXT, "gettimeofday");
 
-    faketime_str = getenv("FAKETIME");
-    if (faketime_str && *faketime_str)
+    env_str = getenv(SCREW_ENV);
+    if (env_str && *env_str)
     {
-        if (*faketime_str == '@')
+        if (*env_str == '@')
         {
             now = time(NULL);
             localtime_r(&now, &abstime);
@@ -47,39 +47,39 @@ void __attribute__ ((constructor)) libfaketime_init()
             for (fmt = date_fmts; *fmt; fmt++)
             {
                 const char * p;
-                if ((p = strptime(faketime_str, *fmt, &abstime)) && !*p)
+                if ((p = strptime(env_str, *fmt, &abstime)) && !*p)
                 {
-                    faketime_diff = mktime(&abstime) - now;
+                    diff_secs = mktime(&abstime) - now;
                     break;
                 }
             }
 
             if (!*fmt)
             {
-                fprintf(stderr, LIBFAKETIME "FAKETIME doesn't contain a valid date string: \"%s\"\n", faketime_str);
+                fprintf(stderr, LOGNAME SCREW_ENV " doesn't contain a valid date string: \"%s\"\n", env_str);
             }
         }
         else
         {
-            faketime_diff = strtol(faketime_str, &unit, 10);
+            diff_secs = strtol(env_str, &unit, 10);
             switch(*unit)
             {
-                case 'y': faketime_diff *= 365;
-                case 'd': faketime_diff *= 24;
-                case 'h': faketime_diff *= 60;
-                case 'm': faketime_diff *= 60;
+                case 'y': diff_secs *= 365;
+                case 'd': diff_secs *= 24;
+                case 'h': diff_secs *= 60;
+                case 'm': diff_secs *= 60;
                 case 's':
                 case 0:
                           break;
 
                 default:
-                          fprintf(stderr, LIBFAKETIME "invalid offset unit: \"%c\"\n", *unit);
+                          fprintf(stderr, LOGNAME "invalid offset unit: \"%c\"\n", *unit);
                           break;
             }
 
             if (*unit && *(unit+1))
             {
-                fprintf(stderr, LIBFAKETIME "ignoring trailing chars: \"%s\"\n", unit+1);
+                fprintf(stderr, LOGNAME "ignoring trailing chars: \"%s\"\n", unit+1);
             }
         }
     }

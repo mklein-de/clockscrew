@@ -1,4 +1,4 @@
-AC_INIT([faketime], m4_esyscmd(svnversion|tr -d '\n'))
+AC_INIT([clockscrew], m4_esyscmd(svnversion|tr -d '\n'))
 AM_INIT_AUTOMAKE
 AM_DISABLE_STATIC
 
@@ -25,6 +25,10 @@ case `uname -s` in
 	;;
 esac
 
+SCREW_ENV=CLOCKSCREW
+AC_SUBST(SCREW_ENV)
+AC_DEFINE_UNQUOTED([SCREW_ENV], ["$SCREW_ENV"], [Name of environment variable])
+
 AC_SUBST(PRELOAD_VAR)
 AC_SUBST(EXTRA_ENV)
 
@@ -32,4 +36,4 @@ AC_CHECK_FUNCS([gettimeofday localtime_r strtol])
 AC_CHECK_HEADERS([sys/time.h])
 AC_FUNC_MKTIME 
 
-AC_OUTPUT([Makefile faketime])
+AC_OUTPUT([Makefile clockscrew])
