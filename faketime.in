@@ -10,25 +10,14 @@ EOF
 	exit 1
 fi
 
-case `uname -s` in
-	Darwin)
-	if [ -n "$DYLD_INSERT_LIBRARIES" ]; then
-		DYLD_INSERT_LIBRARIES=libfaketime@SO_EXT@:$DYLD_INSERT_LIBRARIES
-	else
-		DYLD_INSERT_LIBRARIES=libfaketime@SO_EXT@
-	fi
-	DYLD_FORCE_FLAT_NAMESPACE=1
-	export DYLD_INSERT_LIBRARIES DYLD_FORCE_FLAT_NAMESPACE
-	;;
-	*)
-	if [ -n "$LD_PRELOAD" ]; then
-		LD_PRELOAD=libfaketime@SO_EXT@:$LD_PRELOAD
-	else
-		LD_PRELOAD=libfaketime@SO_EXT@
-	fi
-	export LD_PRELOAD
-	;;
-esac
+if [ -n "$@PRELOAD_VAR@" ]; then
+	@PRELOAD_VAR@=libfaketime@SO_EXT@:$@PRELOAD_VAR@
+else
+	@PRELOAD_VAR@=libfaketime@SO_EXT@
+fi
+export @PRELOAD_VAR@
+
+@EXTRA_ENV@
 
 FAKETIME=$1
 export FAKETIME

@@ -14,6 +14,20 @@ module=no
 eval SO_EXT=$shrext_cmds
 AC_SUBST(SO_EXT)
 
+case `uname -s` in
+	Darwin)
+	PRELOAD_VAR="DYLD_INSERT_LIBRARIES"
+	EXTRA_ENV="DYLD_FORCE_FLAT_NAMESPACE=1; export DYLD_FORCE_FLAT_NAMESPACE"
+	;;
+	*)
+	PRELOAD_VAR="LD_PRELOAD"
+	EXTRA_ENV=""
+	;;
+esac
+
+AC_SUBST(PRELOAD_VAR)
+AC_SUBST(EXTRA_ENV)
+
 AC_CHECK_FUNCS([gettimeofday localtime_r strtol])
 AC_CHECK_HEADERS([sys/time.h])
 AC_FUNC_MKTIME 
