@@ -9,7 +9,10 @@ AC_PROG_CC
 AC_PROG_LIBTOOL
 
 AC_LTDL_SHLIBEXT 
-AC_SUBST(libltdl_cv_shlibext)
+
+module=no
+eval SO_EXT=$shrext_cmds
+AC_SUBST(SO_EXT)
 
 AC_CHECK_FUNCS([gettimeofday localtime_r strtol])
 AC_CHECK_HEADERS([sys/time.h])

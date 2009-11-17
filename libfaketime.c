@@ -19,7 +19,7 @@ int gettimeofday(struct timeval * tp, void * tzp)
     return ret;
 }
 
-void libfaketime_init()
+void __attribute__ ((constructor)) libfaketime_init()
 {
     const char *faketime_str;
     char *unit;

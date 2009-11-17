@@ -13,18 +13,18 @@ fi
 case `uname -s` in
 	Darwin)
 	if [ -n "$DYLD_INSERT_LIBRARIES" ]; then
-		DYLD_INSERT_LIBRARIES=libfaketime@libltdl_cv_shlibext@:$DYLD_INSERT_LIBRARIES
+		DYLD_INSERT_LIBRARIES=libfaketime@SO_EXT@:$DYLD_INSERT_LIBRARIES
 	else
-		DYLD_INSERT_LIBRARIES=libfaketime@libltdl_cv_shlibext@
+		DYLD_INSERT_LIBRARIES=libfaketime@SO_EXT@
 	fi
 	DYLD_FORCE_FLAT_NAMESPACE=1
 	export DYLD_INSERT_LIBRARIES DYLD_FORCE_FLAT_NAMESPACE
 	;;
 	*)
 	if [ -n "$LD_PRELOAD" ]; then
-		LD_PRELOAD=libfaketime@libltdl_cv_shlibext@:$LD_PRELOAD
+		LD_PRELOAD=libfaketime@SO_EXT@:$LD_PRELOAD
 	else
-		LD_PRELOAD=libfaketime@libltdl_cv_shlibext@
+		LD_PRELOAD=libfaketime@SO_EXT@
 	fi
 	export LD_PRELOAD
 	;;
