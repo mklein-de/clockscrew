@@ -1,4 +1,4 @@
-AC_INIT([clockscrew], [1.0])
+AC_INIT([clockscrew], [1.1])
 AM_INIT_AUTOMAKE
 AM_DISABLE_STATIC
 
@@ -7,8 +7,6 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AC_PROG_CC
 AC_PROG_LIBTOOL
-
-AC_SEARCH_LIBS(dlsym, dl)
 
 AC_MSG_CHECKING(for shared library extension)
 module=no
@@ -59,8 +57,12 @@ SCREW_ENV="CLOCKSCREW"
 AC_SUBST(SCREW_ENV)
 AC_DEFINE_UNQUOTED(SCREW_ENV, "$SCREW_ENV", [Name of environment variable])
 
-AC_CHECK_FUNCS([localtime_r strtol])
-AC_FUNC_MKTIME 
+AC_CHECK_FUNCS([localtime_r strtol mktime],,
+	       AC_MSG_ERROR(A required function was not found))
+
+AC_CHECK_FUNCS([gettimeofday clock_gettime])
+AC_SEARCH_LIBS(clock_gettime, rt, AC_DEFINE(HAVE_CLOCK_GETTIME, 1))
+AC_SEARCH_LIBS(dlsym, dl)
 
 AC_MSG_CHECKING(for RTLD_NEXT)
 AC_TRY_COMPILE([#include <dlfcn.h>], [RTLD_NEXT;], AC_MSG_RESULT(yes), 

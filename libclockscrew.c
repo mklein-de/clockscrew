@@ -3,6 +3,7 @@
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <time.h>
 
 #include "svnversion.h"
@@ -12,34 +13,80 @@
 static const char * rcs_id = "@(#)"
         LIBCLOCKSCREW " " PACKAGE_VERSION " (" SVNVERSION "), compiled " __DATE__ " " __TIME__;
 
-static int(*real_gettimeofday)(struct timeval * , void * );
-static time_t(*real_time)(time_t *);
+
+struct clockfuncs
+{
+    time_t(*time)(time_t *);
+#ifdef HAVE_GETTIMEOFDAY
+    int(*gettimeofday)(struct timeval *, void *);
+#endif
+#ifdef HAVE_CLOCK_GETTIME
+    int(*clock_gettime)(clockid_t, struct timespec *);
+#endif
+};
+
+static struct clockfuncs screwed_funcs;
+static struct clockfuncs real_funcs;
+static const struct clockfuncs * curr_funcs;
+
+pthread_mutex_t funcs_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+#define CALL_UNSCREWED(F) \
+    pthread_mutex_lock(&funcs_mutex); \
+    curr_funcs = &real_funcs; \
+    F; \
+    curr_funcs = &screwed_funcs; \
+    pthread_mutex_unlock(&funcs_mutex);
+
 static long diff_secs;
-static int skip;
+
+#ifdef HAVE_CLOCK_GETTIME
+int screwed_clock_gettime(clockid_t clk_id, struct timespec * tv)
+{
+    int ret;
+    CALL_UNSCREWED(ret = clock_gettime(clk_id, tv))
+    tv->tv_sec += diff_secs;
+    return ret;
+}
+
+int clock_gettime(clockid_t clk_id, struct timespec * tv)
+{
+    return curr_funcs->clock_gettime(clk_id, tv);
+}
+#endif /* HAVE_CLOCK_GETTIME */
+
+
+#ifdef HAVE_GETTIMEOFDAY
+int screwed_gettimeofday(struct timeval * tp, void * tzp)
+{
+    int ret;
+    CALL_UNSCREWED(ret = gettimeofday(tp, tzp));
+    tp->tv_sec += diff_secs;
+    return ret;
+}
 
 int gettimeofday(struct timeval * tp, void * tzp)
 {
-    int ret;
-    skip++;
-    ret = real_gettimeofday(tp, tzp);
-    if (!--skip)
+    return curr_funcs->gettimeofday(tp, tzp);
+}
+#endif /* HAVE_GETTIMEOFDAY */
+
+
+time_t screwed_time(time_t * t)
+{
+    time_t ret;
+    CALL_UNSCREWED(ret = time(t));
+    ret += diff_secs;
+    if (t)
     {
-        tp->tv_sec += diff_secs;
+        *t = ret;
     }
     return ret;
 }
 
 time_t time(time_t * t)
 {
-    time_t ret;
-    skip++;
-    ret = real_time(t);
-    if (!--skip)
-    {
-        ret += diff_secs;
-    }
-    if (t) *t = ret;
-    return ret;
+    return curr_funcs->time(t);
 }
 
 static void __attribute__ ((constructor)) init_func()
@@ -51,8 +98,18 @@ static void __attribute__ ((constructor)) init_func()
 
     rcs_id = rcs_id;
 
-    real_gettimeofday = dlsym(RTLD_NEXT, "gettimeofday");
-    real_time = dlsym(RTLD_NEXT, "time");
+#ifdef HAVE_CLOCK_GETTIME
+    real_funcs.clock_gettime = dlsym(RTLD_NEXT, "clock_gettime");
+    screwed_funcs.clock_gettime = screwed_clock_gettime;
+#endif
+#ifdef HAVE_GETTIMEOFDAY
+    real_funcs.gettimeofday = dlsym(RTLD_NEXT, "gettimeofday");
+    screwed_funcs.gettimeofday = screwed_gettimeofday;
+#endif
+    real_funcs.time = dlsym(RTLD_NEXT, "time");
+    screwed_funcs.time = screwed_time;
+
+    curr_funcs = &screwed_funcs;
 
     env_str = getenv(SCREW_ENV);
     if (env_str && *env_str)
