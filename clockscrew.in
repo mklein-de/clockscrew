@@ -2,6 +2,7 @@
 
 if [ $# -lt 2 ]; then
 	cat >&2 <<-EOF
+	@PACKAGE@ version @VERSION@
 	Usage: @PACKAGE@ <screw_spec> <command> [args]
 
 	screw_spec := "@YYYY-MM-DD hh-mm-ss" | "[+-]<count>[smhdy]"
@@ -11,9 +12,9 @@ EOF
 fi
 
 if [ -n "$@PRELOAD_VAR@" ]; then
-	@PRELOAD_VAR@=lib@PACKAGE@@SO_EXT@:$@PRELOAD_VAR@
+	@PRELOAD_VAR@=@LIBDIR@/@LIBCLOCKSCREW@:$@PRELOAD_VAR@
 else
-	@PRELOAD_VAR@=lib@PACKAGE@@SO_EXT@
+	@PRELOAD_VAR@=@LIBDIR@/@LIBCLOCKSCREW@
 fi
 export @PRELOAD_VAR@
 
@@ -21,6 +22,6 @@ export @PRELOAD_VAR@
 
 @SCREW_ENV@="$1"
 export @SCREW_ENV@
-shift
 
+shift
 "$@"

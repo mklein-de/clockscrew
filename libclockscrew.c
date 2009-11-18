@@ -3,19 +3,42 @@
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 #include <time.h>
 
-#define LOGNAME "lib" PACKAGE LT_MODULE_EXT ": "
+#include "svnversion.h"
 
-static int(*real_gettimeofday)(struct timeval *, void*);
+#define LOGNAME LIBCLOCKSCREW ": "
+
+static const char * rcs_id = "@(#)"
+        LIBCLOCKSCREW " " PACKAGE_VERSION " (" SVNVERSION "), compiled " __DATE__ " " __TIME__;
+
+static int(*real_gettimeofday)(struct timeval * , void * );
+static time_t(*real_time)(time_t *);
 static long diff_secs;
+static int skip;
 
 int gettimeofday(struct timeval * tp, void * tzp)
 {
     int ret;
+    skip++;
     ret = real_gettimeofday(tp, tzp);
-    tp->tv_sec += diff_secs;
+    if (!--skip)
+    {
+        tp->tv_sec += diff_secs;
+    }
+    return ret;
+}
+
+time_t time(time_t * t)
+{
+    time_t ret;
+    skip++;
+    ret = real_time(t);
+    if (!--skip)
+    {
+        ret += diff_secs;
+    }
+    if (t) *t = ret;
     return ret;
 }
 
@@ -26,7 +49,10 @@ static void __attribute__ ((constructor)) init_func()
     struct tm abstime;
     time_t now;
 
+    rcs_id = rcs_id;
+
     real_gettimeofday = dlsym(RTLD_NEXT, "gettimeofday");
+    real_time = dlsym(RTLD_NEXT, "time");
 
     env_str = getenv(SCREW_ENV);
     if (env_str && *env_str)
