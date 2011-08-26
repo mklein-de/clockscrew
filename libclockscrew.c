@@ -7,12 +7,19 @@
 #include <time.h>
 
 #include "svnversion.h"
+#include "gitversion.h"
 
 #define LOGNAME LIBCLOCKSCREW ": "
 
-static const char * rcs_id = "@(#)"
+#ifdef SVNVERSION
+static const char * svn_id = "@(#)"
         LIBCLOCKSCREW " " PACKAGE_VERSION " (" SVNVERSION "), compiled " __DATE__ " " __TIME__;
+#endif
 
+#ifdef GITVERSION
+static const char * git_id = "@(#)"
+        LIBCLOCKSCREW " " PACKAGE_VERSION " (" GITVERSION "), compiled " __DATE__ " " __TIME__;
+#endif
 
 struct clockfuncs
 {
@@ -96,7 +103,13 @@ static void __attribute__ ((constructor)) init_func()
     struct tm abstime;
     time_t now;
 
-    rcs_id = rcs_id;
+#ifdef SVNVERSION
+    svn_id = svn_id;
+#endif
+
+#ifdef GITVERSION
+    git_id = git_id;
+#endif
 
 #ifdef HAVE_CLOCK_GETTIME
     real_funcs.clock_gettime = dlsym(RTLD_NEXT, "clock_gettime");
