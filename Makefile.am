@@ -21,6 +21,6 @@ update_svnversion svnversion.h:
 update_gitversion gitversion.h:
 	>gitversion.h
 	[ \! -d .git ] || \
-		( echo "#define GITVERSION \"`git show --pretty=format:%H%n`\"" > gitversion.h.new && \
+		( echo "#define GITVERSION \"`git log -1 --pretty=format:%H`\"" > gitversion.h.new && \
 		  ( [ -f gitversion.h ] && cmp gitversion.h gitversion.h.new > /dev/null &&  \
 		    rm gitversion.h.new || mv gitversion.h.new gitversion.h ) )
